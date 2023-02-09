@@ -63,8 +63,8 @@
             return Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));
         }
 
-        let numOfLines = 16;                                          // 棋盘的横线/竖线数量
-        let squareWidth = 35;                                         // 棋盘的方格宽度
+        let numOfLines = 20;                                          // 棋盘的横线/竖线数量
+        let squareWidth = 30;                                         // 棋盘的方格宽度
         let startXY = 0;                                              // 棋盘x/y轴起点坐标
         let endXY = startXY + squareWidth * (numOfLines - 1);         // 棋盘x/y轴终点坐标
 
@@ -502,6 +502,8 @@
             isPlayerTurn = true;
             history = [];
 
+	    document.getElementById('message').innerHTML = '请行棋';
+            document.getElementById('message').style.color = 'black';
             drawChessBoard();
         }
 
