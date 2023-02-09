@@ -537,6 +537,12 @@
             let c = Math.round(e.offsetX / squareWidth);
             let r = Math.round(e.offsetY / squareWidth);
 
+            if (chessBoard[r][c] !== 0){
+                document.getElementById('message').innerHTML = '当前位置已经有子!';
+                document.getElementById('message').style.color = 'red';
+                return;
+            }
+
             // 用户行棋
             placingPiece(r, c, player);
             isPlayerTurn = !isPlayerTurn;
