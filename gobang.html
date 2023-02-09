@@ -506,6 +506,12 @@
         }
 
         const undo = () => {
+	    if (isGameOver){
+                document.getElementById('message').innerHTML = '请重新开始';
+                document.getElementById('message').style.color = 'red';
+                return;
+            }
+		
             if (!isPlayerTurn){
                 return;
             }
@@ -515,13 +521,6 @@
                 chessBoard[pos.r][pos.c] = 0;
                 pos = history.pop();
                 chessBoard[pos.r][pos.c] = 0;
-
-                if (isGameOver){
-                    isPlayerTurn = true;
-                    isGameOver = false;
-                    document.getElementById('message').innerHTML = '请行棋';
-                    document.getElementById('message').style.color = 'black';
-                }
 
                 drawChessBoard();
             }
