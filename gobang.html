@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋</title>
+
+    <style>
+        .title {
+            text-align: center;
+        }
+
+        .buttons {
+            height: 50px;
+            text-align: center;
+            margin-bottom: 1%;
+        }
+
+        #restart {
+            height: 40px;
+            color: #1890ff;
+            background-color: #fff;
+            border-width: 1px;
+            border-color: #1890ff;
+            border-radius: 5px;
+            margin-right: 6%;
+        }
+
+        #undo {
+            height: 40px;
+            color: #1890ff;
+            background-color: #fff;
+            border-width: 1px;
+            border-color: #1890ff;
+            border-radius: 5px;
+        }
+
+        #gobang {
+            display: block;
+            margin: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h2 class="title">五子棋</h2>
+    <div class="buttons">
+        <button id="restart" onclick="restart()">重新开始</button>
+        <button id="undo" onclick="undo()">上一步</button>
+    </div>
+    <canvas id="gobang"></canvas>
+
+    <script>
+        let numOfLines = 16;                                         // 棋盘的横线/竖线数量
+        let squareWidth = 35;                                         // 棋盘的方格宽度
+        let startXY = 0;                                              // 棋盘x/y轴起点坐标
+        let endXY = startXY + squareWidth * (numOfLines - 1);         // 棋盘x/y轴终点坐标
+
+        let chessBoard = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));    // 棋盘, ES6语法, 0 默认为该位置无棋子
+        let scores     = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));    // 分值表，用于辅助 ai 判断最合适的落子位置
+        let history = [];
+
+        let player = 1;              // 1 代表该位置为 玩家
+        let ai = 2;              // 2 代表该位置为 ai
+        let playerColor = 'black';   // 玩家 棋子颜色
+        let aiColor = 'red';     // ai  棋子颜色
+        let isPlayerTurn = true;     // 当前行棋方是否为玩家
+        let isGameOver = false;    // 是否游戏结束
+
+        let gobang = document.getElementById("gobang");
+
+        // 调节棋盘大小
+        gobang.width = numOfLines * squareWidth;
+        gobang.height = numOfLines * squareWidth;
+
+        let context = gobang.getContext("2d");
+        context.strokeStyle = "#b9b9b9";   // 设置棋盘网格线颜色
+
+        // 指定坐标和颜色来绘制圆形棋子
+        const drawChessPiece = (r, c, color) => {
+            context.beginPath();
+            context.arc(startXY + c * squareWidth, startXY + r * squareWidth,    // 圆心坐标
+                12,                                                      // 半径
+                0, 2 * Math.PI);                                         // 绘制 0 度到 360 度
+            context.closePath();
+
+            context.fillStyle = color;
+            context.fill();
+        }
+
+        // 绘制棋盘
+        const drawChessBoard = () => {
+            // 清空当前画布
+            context.beginPath();
+            context.setTransform(1, 0, 0, 1, 0, 0);
+            context.clearRect(0, 0, gobang.width, gobang.height);
+            context.closePath();
+
+            for (let i = 0; i < numOfLines; i++) {
+                // 绘制横线
+                context.moveTo(startXY, startXY + i * squareWidth);
+                context.lineTo(endXY, startXY + i * squareWidth);
+                context.stroke();
+
+                // 绘制竖线
+                context.moveTo(startXY + i * squareWidth, startXY);
+                context.lineTo(startXY + i * squareWidth, endXY);
+                context.stroke();
+            }
+
+            // 绘制棋子
+            for (let r = 0; r < numOfLines; r++) {
+                for (let c = 0; c < numOfLines; c++) {
+                    if (chessBoard[r][c] === player) {
+                        drawChessPiece(r, c, playerColor);
+                    }
+                    else if (chessBoard[r][c] === ai) {
+                        drawChessPiece(r, c, aiColor);
+                    }
+                }
+            }
+        }
+
+        // 以某个位置为起点向一个方向延伸，计入5个格子，统计其中的 玩家棋子数和 ai棋子数，并通过该函数得出自该点起，5个格子的分数
+        const evaluateScore = (numOfPlayer, numOfAi) => {
+            if (numOfPlayer > 0 && numOfAi > 0){
+                return 0;
+            }
+			
+		    if (numOfPlayer === 0 && numOfAi === 0){
+                return 7;
+            }
+			
+		    if (numOfPlayer > 0){
+			    switch (numOfPlayer){
+				    case 1:
+					    return 15;
+				    case 2:
+					    return 400;
+				    case 3:
+					    return 1800;
+				    case 4:
+					    return 100000;
+			    }
+		    }
+			
+		    if (numOfAi){
+                switch(numOfAi){
+                    case 1:
+                        return 35;
+                    case 2:
+                        return 800;
+                    case 3:
+                        return 15000;
+                    case 4:
+                        return 800000;
+			    }
+		    }
+		
+		    return -1;
+        }
+
+        // 计算棋盘中所有空白位置的水平方向分数
+        const calcScoresHorizontal = () => {
+            let cEnd = numOfLines - 4;       // 沿着自左向右的水平单向，得出终点所在列
+
+            for (let r = 0;r < numOfLines;r++){
+                for (let c = 0;c < cEnd;c++){
+                    let numOfPlayer = 0;
+                    let numOfAi = 0;
+
+                    let cc = c;
+                    while (cc < c + 5){
+                        if (chessBoard[r][cc] === player){
+                            numOfPlayer++;
+                        }
+                        else if (chessBoard[r][cc] === ai){
+                            numOfAi++;
+                        }
+
+                        cc++;
+                    }
+
+                    let score = evaluateScore(numOfPlayer, numOfAi);
+                    cc = c;
+                    while (cc < c + 5){
+                        if (chessBoard[r][cc] === 0){
+                            scores[r][cc] += score;
+                        }
+
+                        cc++;
+                    }
+                }
+            }
+        }
+
+        // 计算棋盘中所有空白位置的垂直方向分数
+        const calcScoresVertical = () => {
+            let rEnd = numOfLines - 4;       // 沿着自上向下的垂直单向，得出终点所在行
+
+            for (let r = 0;r < rEnd;r++){
+                for (let c = 0;c < numOfLines;c++){
+                    let numOfPlayer = 0;
+                    let numOfAi = 0;
+
+                    let rr = r;
+                    while (rr < r + 5){
+                        if (chessBoard[rr][c] === player){
+                            numOfPlayer++;
+                        }
+                        else if (chessBoard[rr][c] === ai){
+                            numOfAi++;
+                        }
+
+                        rr++;
+                    }
+
+                    let score = evaluateScore(numOfPlayer, numOfAi);
+                    rr = r;
+                    while (rr < r + 5){
+                        if (chessBoard[rr][c] === 0){
+                            scores[rr][c] += score;
+                        }
+
+                        rr++;
+                    }
+                }
+            }
+        }
+
+        // 计算棋盘中所有空白位置的主对角线方向分数
+        const calcScoresDiagonal = () => {
+            let rEnd = numOfLines - 4;     // 沿着自左上至右下的单向，得出终点所在行和列
+            let cEnd = numOfLines - 4;
+
+            for (let r = 0;r < rEnd;r++){
+                for (let c = 0;c < cEnd;c++){
+                    let numOfPlayer = 0;
+                    let numOfAi = 0;
+
+                    let rr = r;
+                    let cc = c;
+                    while (rr < r + 5){
+                        if (chessBoard[rr][cc] === player){
+                            numOfPlayer++;
+                        }
+                        else if (chessBoard[rr][cc] === ai){
+                            numOfAi++;
+                        }
+
+                        rr++;
+                        cc++;
+                    }
+
+                    let score = evaluateScore(numOfPlayer, numOfAi);
+                    rr = r;
+                    cc = c;
+                    while (rr < r + 5){
+                        if (chessBoard[rr][cc] === 0){
+                            scores[rr][cc] += score;
+                        }
+
+                        rr++;
+                        cc++;
+                    }
+                }
+            }
+        }
+        
+        // 计算棋盘中所有空白位置的副对角线方向分数
+        const calcScoresSecondaryDiagonal = () => {
+            let rEnd = numOfLines - 4;        // 沿着自右上至左下的单向，得出终点所在行，特别的，所在列需要在意起点而不是终点
+            let cBegin = 4;
+
+            for (let r = 0;r < rEnd;r++){
+                for (let c = cBegin;c < numOfLines;c++){
+                    let numOfPlayer = 0;
+                    let numOfAi = 0;
+
+                    let rr = r;
+                    let cc = c;
+                    while (rr < r + 5){
+                        if (chessBoard[rr][cc] === player){
+                            numOfPlayer++;
+                        }
+                        else if (chessBoard[rr][cc] === ai){
+                            numOfAi++;
+                        }
+
+                        rr++;
+                        cc--;
+                    }
+
+                    let score = evaluateScore(numOfPlayer, numOfAi);
+                    rr = r;
+                    cc = c;
+                    while (rr < r + 5){
+                        if (chessBoard[rr][cc] === 0){
+                            scores[rr][cc] += score;
+                        }
+
+                        rr++;
+                        cc--;
+                    }
+                }
+            }
+        }
+
+        // 为 ai 生成最优走步
+        const genBestMoveForAI = () => {
+            calcScoresHorizontal();
+            calcScoresVertical();
+            calcScoresDiagonal();
+            calcScoresSecondaryDiagonal();
+
+            console.log(scores);
+
+            let maxScore = -1;
+            let bestR = 0, bestC = 0;
+
+            for (let r = 0;r < numOfLines;++r){
+                for (let c = 0;c < numOfLines;++c){
+                    if (scores[r][c] > maxScore){
+                        maxScore = scores[r][c];
+                        bestR = r;
+                        bestC = c;
+                    }
+                }
+            }
+
+            scores = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));
+            return { r: bestR, c: bestC };
+        }
+
+        // 落子, 指定位置以及落子方
+        const placingPiece = (r, c, who) => {
+            chessBoard[r][c] = who;
+            isPlayerTurn = !isPlayerTurn;
+        }
+
+        // 检验某点开始的水平方向是否构成五子
+        const checkHorizontal = (r, c, who) => {
+            let counter = 0;
+
+            let cc = c - 1;
+            while (cc > 0) {
+                if (chessBoard[r][cc] === who) {
+                    counter++;
+                    cc--;
+                }
+                else {
+                    break;
+                }
+            }
+
+            cc = c + 1;
+            while (cc < numOfLines) {
+                if (chessBoard[r][cc] === who) {
+                    counter++;
+                    cc++;
+                }
+                else {
+                    break;
+                }
+            }
+
+            return counter + 1 >= 5;
+        }
+
+        // 检验某点开始的垂直方向是否构成五子
+        const checkVertical = (r, c, who) => {
+            let counter = 0;
+
+            let rr = r - 1;
+            while (rr > 0) {
+                if (chessBoard[rr][c] === who) {
+                    counter++;
+                    rr--;
+                }
+                else {
+                    break;
+                }
+            }
+
+            rr = r + 1;
+            while (rr < numOfLines) {
+                if (chessBoard[rr][c] === who) {
+                    counter++;
+                    rr++;
+                }
+                else {
+                    break;
+                }
+            }
+
+            return counter + 1 >= 5;
+        }
+
+        // 检验某点开始的主对角线是否构成五子
+        const checkDiagonal = (r, c, who) => {
+            let counter = 0;
+
+            let rr = r - 1;
+            let cc = c - 1;
+            while (rr > 0 && cc > 0) {
+                if (chessBoard[rr][cc] === who) {
+                    counter++;
+                    rr--;
+                    cc--;
+                }
+                else {
+                    break;
+                }
+            }
+
+            rr = r + 1;
+            cc = c + 1;
+            while (rr < numOfLines && cc < numOfLines) {
+                if (chessBoard[rr][cc] === who) {
+                    counter++;
+                    rr++;
+                    cc++;
+                }
+                else {
+                    break;
+                }
+            }
+
+            return counter + 1 >= 5;
+        }
+
+        // 检验某点开始的副对角线是否构成五子
+        const checkSecondaryDiagonal = (r, c, who) => {
+            let counter = 0;
+
+            let rr = r - 1;
+            let cc = c + 1;
+            while (rr > 0 && cc < numOfLines) {
+                if (chessBoard[rr][cc] === who) {
+                    counter++;
+                    rr--;
+                    cc++;
+                }
+                else {
+                    break;
+                }
+            }
+
+            rr = r + 1;
+            cc = c - 1;
+            while (rr < numOfLines && cc > 0) {
+                if (chessBoard[rr][cc] === who) {
+                    counter++;
+                    rr++;
+                    cc--;
+                }
+                else {
+                    break;
+                }
+            }
+
+            return counter + 1 >= 5;
+        }
+
+        // 某一方在当前位置落子后，判断是否胜负已分
+        const checkWinner = (r, c, who) => {
+            if (checkHorizontal(r, c, who)) {
+                return true;
+            }
+
+            if (checkVertical(r, c, who)) {
+                return true;
+            }
+
+            if (checkDiagonal(r, c, who)) {
+                return true;
+            }
+
+            if (checkSecondaryDiagonal(r, c, who)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        const restart = () => {
+            chessBoard = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));
+            scores = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));
+            isGameOver = false;
+            isPlayerTurn = true;
+            history = [];
+
+            drawChessBoard();
+        }
+
+        const undo = () => {
+            if (!isPlayerTurn) {
+                return;
+            }
+
+            if (history.length > 0) {
+                let pos = history.pop();
+                chessBoard[pos.r][pos.c] = 0;
+                pos = history.pop();
+                chessBoard[pos.r][pos.c] = 0;
+
+                if (isGameOver){
+                    isGameOver = false;
+                }
+
+                drawChessBoard();
+            }
+        }
+
+        // 设置棋盘点击事件
+        gobang.onclick = (e) => {
+            if (!isPlayerTurn || isGameOver) {
+                return;
+            }
+
+            // 获取用户点击的坐标，采用四舍五入取整
+            let c = Math.round(e.offsetX / squareWidth);
+            let r = Math.round(e.offsetY / squareWidth);
+
+            // 用户行棋
+            placingPiece(r, c, player);
+            drawChessBoard();
+            if (checkWinner(r, c, player)) {
+                isGameOver = true;
+                alert('You win!');
+            }
+
+            history.push({ r: r, c: c });
+
+            // ai 行棋
+            let pos = genBestMoveForAI();
+            placingPiece(pos.r, pos.c, ai);
+            drawChessBoard();
+            if (checkWinner(pos.r, pos.c, ai)) {
+                isGameOver = true;
+                alert('You lose!');
+            }
+
+            history.push({ r: pos.r, c: pos.c });
+        }
+
+        window.onload = () => {
+            drawChessBoard();
+        }
+    </script>
+</body>
+
+</html>
