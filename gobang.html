@@ -12,6 +12,10 @@
             text-align: center;
         }
 
+        #message {
+            text-align: center;
+        }
+
         .buttons {
             height: 50px;
             text-align: center;
@@ -46,6 +50,7 @@
 
 <body>
     <h2 class="title">五子棋</h2>
+    <h4 id="message">请行棋</h4>
     <div class="buttons">
         <button id="restart" onclick="restart()">重新开始</button>
         <button id="undo" onclick="undo()">上一步</button>
@@ -53,21 +58,26 @@
     <canvas id="gobang"></canvas>
 
     <script>
-        let numOfLines = 16;                                         // 棋盘的横线/竖线数量
+        // 生成指定大小的二维数组，并将值初始化为0
+        const make2DArray = () => {
+            return Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));
+        }
+
+        let numOfLines = 16;                                          // 棋盘的横线/竖线数量
         let squareWidth = 35;                                         // 棋盘的方格宽度
         let startXY = 0;                                              // 棋盘x/y轴起点坐标
         let endXY = startXY + squareWidth * (numOfLines - 1);         // 棋盘x/y轴终点坐标
 
-        let chessBoard = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));    // 棋盘, ES6语法, 0 默认为该位置无棋子
-        let scores     = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));    // 分值表，用于辅助 ai 判断最合适的落子位置
+        let chessBoard = make2DArray();    // 棋盘, ES6语法, 0 默认为该位置无棋子
+        let scores     = make2DArray();    // 分值表，用于辅助 ai 判断最合适的落子位置
         let history = [];
 
         let player = 1;              // 1 代表该位置为 玩家
-        let ai = 2;              // 2 代表该位置为 ai
+        let ai = 2;                  // 2 代表该位置为 ai
         let playerColor = 'black';   // 玩家 棋子颜色
-        let aiColor = 'red';     // ai  棋子颜色
+        let aiColor = 'red';         // ai  棋子颜色
         let isPlayerTurn = true;     // 当前行棋方是否为玩家
-        let isGameOver = false;    // 是否游戏结束
+        let isGameOver = false;      // 是否游戏结束
 
         let gobang = document.getElementById("gobang");
 
@@ -82,8 +92,8 @@
         const drawChessPiece = (r, c, color) => {
             context.beginPath();
             context.arc(startXY + c * squareWidth, startXY + r * squareWidth,    // 圆心坐标
-                12,                                                      // 半径
-                0, 2 * Math.PI);                                         // 绘制 0 度到 360 度
+                12,                                                              // 半径
+                0, 2 * Math.PI);                                                 // 绘制 0 度到 360 度
             context.closePath();
 
             context.fillStyle = color;
@@ -330,7 +340,7 @@
                 }
             }
 
-            scores = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));
+            scores = make2DArray();
             return { r: bestR, c: bestC };
         }
 
@@ -486,8 +496,8 @@
         }
 
         const restart = () => {
-            chessBoard = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));
-            scores = Array.from(Array(numOfLines), () => new Array(numOfLines).fill(0));
+            chessBoard = make2DArray();
+            scores     = make2DArray();
             isGameOver = false;
             isPlayerTurn = true;
             history = [];
@@ -496,7 +506,7 @@
         }
 
         const undo = () => {
-            if (!isPlayerTurn) {
+            if (!isPlayerTurn){
                 return;
             }
 
@@ -507,7 +517,10 @@
                 chessBoard[pos.r][pos.c] = 0;
 
                 if (isGameOver){
+                    isPlayerTurn = true;
                     isGameOver = false;
+                    document.getElementById('message').innerHTML = '请行棋';
+                    document.getElementById('message').style.color = 'black';
                 }
 
                 drawChessBoard();
@@ -526,24 +539,34 @@
 
             // 用户行棋
             placingPiece(r, c, player);
+            isPlayerTurn = !isPlayerTurn;
             drawChessBoard();
             if (checkWinner(r, c, player)) {
                 isGameOver = true;
-                alert('You win!');
+                document.getElementById('message').innerHTML = '你赢了!';
+                document.getElementById('message').style.color = '#1890ff';
+                return;
             }
 
             history.push({ r: r, c: c });
 
             // ai 行棋
+            document.getElementById('message').innerHTML = 'AI 思考中。。。';
+            document.getElementById('message').style.color = 'black';
             let pos = genBestMoveForAI();
             placingPiece(pos.r, pos.c, ai);
+            isPlayerTurn = !isPlayerTurn;
             drawChessBoard();
             if (checkWinner(pos.r, pos.c, ai)) {
                 isGameOver = true;
-                alert('You lose!');
+                document.getElementById('message').innerHTML = '你输了!';
+                document.getElementById('message').style.color = 'red';
+                return;
             }
 
             history.push({ r: pos.r, c: pos.c });
+            document.getElementById('message').innerHTML = '请行棋';
+            document.getElementById('message').style.color = 'black';
         }
 
         window.onload = () => {
