@@ -559,20 +559,24 @@
             // ai 行棋
             document.getElementById('message').innerHTML = 'AI 思考中。。。';
             document.getElementById('message').style.color = 'black';
-            let pos = genBestMoveForAI();
-            placingPiece(pos.r, pos.c, ai);
-            isPlayerTurn = !isPlayerTurn;
-            drawChessBoard();
-            if (checkWinner(pos.r, pos.c, ai)) {
-                isGameOver = true;
-                document.getElementById('message').innerHTML = '你输了!';
-                document.getElementById('message').style.color = 'red';
-                return;
-            }
+            
+	    // 由于该算法速度极快，会导致 ai 立刻给出最优解，故延迟 200ms来优化用户体验
+            setTimeout(() => {
+                let pos = genBestMoveForAI();
+                placingPiece(pos.r, pos.c, ai);
+                isPlayerTurn = !isPlayerTurn;
+                drawChessBoard();
+                if (checkWinner(pos.r, pos.c, ai)) {
+                    isGameOver = true;
+                    document.getElementById('message').innerHTML = '你输了!';
+                    document.getElementById('message').style.color = 'red';
+                    return;
+                }
 
-            history.push({ r: pos.r, c: pos.c });
-            document.getElementById('message').innerHTML = '请行棋';
-            document.getElementById('message').style.color = 'black';
+                history.push({ r: pos.r, c: pos.c });
+                document.getElementById('message').innerHTML = '请行棋';
+                document.getElementById('message').style.color = 'black';
+            }, 200);
         }
 
         window.onload = () => {
