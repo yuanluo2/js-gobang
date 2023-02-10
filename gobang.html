@@ -138,37 +138,37 @@
                 return 0;
             }
 			
-		    if (numOfPlayer === 0 && numOfAi === 0){
+            if (numOfPlayer === 0 && numOfAi === 0){
                 return 7;
             }
 			
-		    if (numOfPlayer > 0){
-			    switch (numOfPlayer){
-				    case 1:
-					    return 15;
-				    case 2:
-					    return 400;
-				    case 3:
-					    return 1800;
-				    case 4:
-					    return 100000;
-			    }
-		    }
+            if (numOfPlayer > 0){
+		switch (numOfPlayer){
+		case 1:
+		    return 15;
+		case 2:
+                    return 400;
+                case 3:
+                    return 1800;
+                case 4:
+                    return 100000;
+	        }
+	    }
 			
-		    if (numOfAi){
-                switch(numOfAi){
-                    case 1:
-                        return 35;
-                    case 2:
-                        return 800;
-                    case 3:
-                        return 15000;
-                    case 4:
-                        return 800000;
-			    }
-		    }
-		
-		    return -1;
+	    if (numOfAi){
+	        switch(numOfAi){
+	        case 1:
+		    return 35;
+	        case 2:
+		    return 800;
+	        case 3:
+		    return 15000;
+	        case 4:
+		    return 800000;
+		}
+	    }
+
+	    return -1;
         }
 
         // 计算棋盘中所有空白位置的水平方向分数
