@@ -65,7 +65,7 @@
 
         let numOfLines = 20;                                          // 棋盘的横线/竖线数量
         let squareWidth = 30;                                         // 棋盘的方格宽度
-        let startXY = 0;                                              // 棋盘x/y轴起点坐标
+        let startXY = 15;                                             // 棋盘x/y轴起点坐标
         let endXY = startXY + squareWidth * (numOfLines - 1);         // 棋盘x/y轴终点坐标
 
         let chessBoard = make2DArray();    // 棋盘, 0 默认为该位置无棋子
@@ -535,8 +535,8 @@
             }
 
             // 获取用户点击的坐标，采用四舍五入取整
-            let c = Math.round(e.offsetX / squareWidth);
-            let r = Math.round(e.offsetY / squareWidth);
+            let c = Math.round((e.offsetX - startXY) / squareWidth);
+            let r = Math.round((e.offsetY - startXY) / squareWidth);
 
             if (chessBoard[r][c] !== 0){
                 document.getElementById('message').innerHTML = '当前位置已经有子!';
