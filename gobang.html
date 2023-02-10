@@ -560,7 +560,7 @@
             document.getElementById('message').innerHTML = 'AI 思考中。。。';
             document.getElementById('message').style.color = 'black';
             
-	    // 由于该算法速度极快，会导致 ai 立刻给出最优解，故延迟 200ms来优化用户体验
+	    // 由于该算法速度极快，会导致 ai 立刻给出最优解，故延迟 200ms来优化玩家体验
             setTimeout(() => {
                 let pos = genBestMoveForAI();
                 placingPiece(pos.r, pos.c, ai);
