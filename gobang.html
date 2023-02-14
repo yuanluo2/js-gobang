@@ -144,31 +144,31 @@
 			
             if (numOfPlayer > 0){
 		switch (numOfPlayer){
-		case 1:
-		    return 15;
-		case 2:
-                    return 400;
-                case 3:
-                    return 1800;
-                case 4:
-                    return 100000;
+		    case 1:
+		        return 15;
+		    case 2:
+                        return 400;
+                    case 3:
+                        return 1800;
+                    case 4:
+                        return 100000;
+	            }
 	        }
-	    }
 			
-	    if (numOfAi){
-	        switch(numOfAi){
-	        case 1:
-		    return 35;
-	        case 2:
-		    return 800;
-	        case 3:
-		    return 15000;
-	        case 4:
-		    return 800000;
-		}
-	    }
+            if (numOfAi){
+                switch(numOfAi){
+                    case 1:
+                        return 35;
+                    case 2:
+                        return 800;
+                    case 3:
+                        return 15000;
+                    case 4:
+                        return 800000;
+                }
+            }
 
-	    return -1;
+	        return -1;
         }
 
         // 计算棋盘中所有空白位置的水平方向分数
@@ -337,7 +337,7 @@
                 }
             }
 
-            scores = make2DArray();
+            scores = make2DArray();         // 重置分数表
             return { r: bestR, c: bestC };
         }
 
@@ -492,6 +492,12 @@
             return false;
         }
 
+        const setMessage = (message, color) => {
+            let dom = document.getElementById('message');
+            dom.innerHTML = message;
+            dom.style.color = color;
+        }
+
         const restart = () => {
             chessBoard = make2DArray();
             scores     = make2DArray();
@@ -499,15 +505,13 @@
             isPlayerTurn = true;
             history = [];
 
-	    document.getElementById('message').innerHTML = '请行棋';
-            document.getElementById('message').style.color = 'black';
+            setMessage('请行棋', 'black');
             drawChessBoard();
         }
 
         const undo = () => {
 	    if (isGameOver){
-                document.getElementById('message').innerHTML = '请重新开始';
-                document.getElementById('message').style.color = 'red';
+                setMessage('请重新开始', 'red');
                 return;
             }
 		
@@ -536,8 +540,7 @@
             let r = Math.round((e.offsetY - startXY) / squareWidth);
 
             if (chessBoard[r][c] !== 0){
-                document.getElementById('message').innerHTML = '当前位置已经有子!';
-                document.getElementById('message').style.color = 'red';
+                setMessage('当前位置已经有子!', 'red');
                 return;
             }
 
@@ -547,18 +550,16 @@
             drawChessBoard();
             if (checkWinner(r, c, player)) {
                 isGameOver = true;
-                document.getElementById('message').innerHTML = '你赢了!';
-                document.getElementById('message').style.color = '#1890ff';
+                setMessage('你赢了!', '#1890ff');
                 return;
             }
 
             history.push({ r: r, c: c });
 
             // ai 行棋
-            document.getElementById('message').innerHTML = 'AI 思考中。。。';
-            document.getElementById('message').style.color = 'black';
+            setMessage('AI 思考中。。。', 'black');
             
-	    // 由于该算法速度极快，会导致 ai 立刻给出最优解，故延迟 200ms来优化玩家体验
+	        // 由于该算法速度极快，会导致 ai 立刻给出最优解，故延迟 200ms来优化玩家体验
             setTimeout(() => {
                 let pos = genBestMoveForAI();
                 placingPiece(pos.r, pos.c, ai);
@@ -566,14 +567,12 @@
                 drawChessBoard();
                 if (checkWinner(pos.r, pos.c, ai)) {
                     isGameOver = true;
-                    document.getElementById('message').innerHTML = '你输了!';
-                    document.getElementById('message').style.color = 'red';
+                    setMessage('你输了', 'red');
                     return;
                 }
 
                 history.push({ r: pos.r, c: pos.c });
-                document.getElementById('message').innerHTML = '请行棋';
-                document.getElementById('message').style.color = 'black';
+                setMessage('请行棋', 'black');
             }, 200);
         }
 
