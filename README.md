@@ -4,5 +4,4 @@
 ====================================================
 ###### use javascript to implement a gobang game with AI. canvas is used to draw chess board.
 
-![image](https://github.com/yuanluo2/js-gobang/assets/49439486/e9d99348-7db4-4fd2-8ff2-457388ca8e5d)
-
+![image](https://github.com/yuanluo2/js-gobang/assets/49439486/a3a67bb1-1333-4dc8-af71-e0ba1b08c506)
